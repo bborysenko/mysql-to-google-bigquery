@@ -73,6 +73,11 @@ class BigQuery
                     break;
             }
 
+            #BQ column name must start from letter or underscore
+            if (is_int($name)) {
+                $name = "_" . $name;
+            }
+
             $bigQueryColumns[] = [
                 'name' => $name,
                 'type' => $type

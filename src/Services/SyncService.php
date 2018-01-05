@@ -203,7 +203,11 @@ class SyncService
 
                 // Convert to PHP values, BigQuery requires the correct types on JSON, uppercase is not supported by
                 // BigQuery - make keys lowercase
-                $type = $mysqlTableColumns[strtolower($key)]->getType();
+                if (isset($mysqlTableColumns[strtolower($key)])) {
+                    $type = $mysqlTableColumns[strtolower($key)]->getType();
+                } else {
+                    $type = \Doctrine\DBAL\Types\Type::getType('string');
+                }
 
                 if ($type->getName() !== Type::STRING
                     && $type->getName() !== Type::TEXT
@@ -211,8 +215,19 @@ class SyncService
                     $row[$key] = $type->convertToPhpValue($value, $mysqlPlatform);
                 }
 
+                #If name is array need "mode": "repeated" in schema or convert it to string
+                if (is_array($row[$key])) {
+                    $row[$key] = implode($row[$key]);
+                }
+
                 if (is_string($row[$key])) {
                     $row[$key] = mb_convert_encoding($row[$key], 'UTF-8', mb_detect_encoding($value));
+                }
+
+                #If name is int just add underscore
+                if (is_int($key)) {
+                    $row["_".$key] = $row[$key];
+                    unset($row[$key]);
                 }
             }
 
