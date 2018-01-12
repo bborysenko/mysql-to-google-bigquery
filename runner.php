@@ -27,6 +27,10 @@ if (empty($uploadTables) && isset($_ENV['UPLOAD_TABLES'])) {
     $uploadTables = explode(',', $_ENV['UPLOAD_TABLES']);
 }
 
+if (isset($_ENV['UPLOAD_TABLES_PATTERNS'])) {
+    $uploadTablesPatterns = explode(',', $_ENV['UPLOAD_TABLES_PATTERNS']);
+}
+
 if (isset($_ENV['SLEEP_TIME'])) {
     $sleepTime = $_ENV['SLEEP_TIME'];
 } else {
@@ -52,6 +56,16 @@ while(true) {
     } catch (Exception $e){
         die(mysqli_error());
     }
+
+    foreach($uploadTablesPatterns as $uploadTablesPattern) {
+        $query = "show tables from " . $_ENV['DB_DATABASE_NAME'] . " like '$uploadTablesPattern'";
+        $result = mysqli_query($_resource, $query);
+        while ($row = mysqli_fetch_row($result)) {
+            array_push($uploadTables, $row[0]);
+        }
+    }
+
+    print_r($uploadTables);
 
     $jsonFilePath = getcwd(). '/lastuploads';
     if (file_exists($jsonFilePath)) {
