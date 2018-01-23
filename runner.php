@@ -23,12 +23,8 @@ if (file_exists(getcwd(). '/.env')) {
     $dotenv->load();
 }
 
-if (empty($uploadTables) && isset($_ENV['UPLOAD_TABLES'])) {
-    $uploadTables = explode(',', $_ENV['UPLOAD_TABLES']);
-}
-
-if (isset($_ENV['UPLOAD_TABLES_PATTERNS'])) {
-    $uploadTablesPatterns = explode(',', $_ENV['UPLOAD_TABLES_PATTERNS']);
+if (empty($excludeTables) && isset($_ENV['EXCLUDE_TABLES'])) {
+    $excludeTables = explode(',', $_ENV['EXCLUDE_TABLES']);
 }
 
 if (isset($_ENV['SLEEP_TIME'])) {
@@ -57,15 +53,14 @@ while(true) {
         die(mysqli_error());
     }
 
-    foreach($uploadTablesPatterns as $uploadTablesPattern) {
-        $query = "show tables from " . $_ENV['DB_DATABASE_NAME'] . " like '$uploadTablesPattern'";
-        $result = mysqli_query($_resource, $query);
-        while ($row = mysqli_fetch_row($result)) {
-            array_push($uploadTables, $row[0]);
-        }
+    $allTables = array();
+    $query = "show tables from " . $_ENV['DB_DATABASE_NAME'];
+    $result = mysqli_query($_resource, $query);
+    while ($row = mysqli_fetch_row($result)) {
+        array_push($allTables, $row[0]);
     }
 
-    print_r($uploadTables);
+    $uploadTables = array_diff($allTables, $excludeTables);
 
     $jsonFilePath = getcwd(). '/lastuploads';
     if (file_exists($jsonFilePath)) {

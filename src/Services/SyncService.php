@@ -210,7 +210,7 @@ class SyncService
                 }
 
                 if ($type->getName() !== Type::STRING
-                    && $type->getName() !== Type::TEXT
+                    && $type->getName() !== Type::TEXT && $type->getName() !== Type::BOOLEAN
                 ) {
                     $row[$key] = $type->convertToPhpValue($value, $mysqlPlatform);
                 }

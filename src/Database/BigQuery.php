@@ -37,7 +37,7 @@ class BigQuery
                     break;
 
                 case Type::BOOLEAN:
-                    $type = 'BOOLEAN';
+                    $type = 'INTEGER';
                     break;
 
                 case Type::DATE:
