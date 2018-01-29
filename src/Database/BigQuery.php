@@ -23,6 +23,7 @@ class BigQuery
         // STRING, BYTES, INTEGER, FLOAT, BOOLEAN,
         // TIMESTAMP, DATE, TIME, DATETIME
         foreach ($mysqlTableColumns as $name => $column) {
+            $description = '';
             switch ($column->getType()->getName()) {
                 case 'bigquerydate':
                     $type = 'DATE';
@@ -78,9 +79,14 @@ class BigQuery
                 $name = "_" . $name;
             }
 
+            if ($comment = $column->getComment()) {
+                $description = $comment;
+            }
+
             $bigQueryColumns[] = [
                 'name' => $name,
-                'type' => $type
+                'type' => $type,
+                'description' => $description
             ];
         }
 
