@@ -19,9 +19,6 @@ function uploadToGBQ($tableName) {
     echo($command . PHP_EOL);
     $output = shell_exec($command);
     echo($output . PHP_EOL);
-    $nowDateTime = new DateTime();
-    $nowTimestamp = $nowDateTime -> getTimestamp();
-    return $nowTimestamp;
 }
 
 if (file_exists(getcwd(). '/.env')) {
@@ -72,37 +69,33 @@ while(true) {
     if (file_exists($jsonFilePath)) {
         $activeStatus = json_decode(file_get_contents($jsonFilePath), true);
         unlink($jsonFilePath);
-        foreach($uploadTables as $tableName) {
-            if(isset($activeStatus[$tableName])) {
-                $query = "select UPDATE_TIME from tables where TABLE_NAME='". $tableName ."' and table_schema='". $_ENV['DB_DATABASE_NAME'] ."'";
-                $result = mysqli_query($_resource, $query);
-                $row = mysqli_fetch_row($result);
-                if(!is_null($row[0])) {
-                    $lastMysqlUpdate = new DateTime($row[0]);
-                    $lastMysqlUpdateTimestamp = $lastMysqlUpdate -> getTimestamp();
-                    $diffTimestamp = $lastMysqlUpdateTimestamp - $activeStatus[$tableName];
-                    $timeFromLastUpdate = diffTimeStampFromNow($activeStatus[$tableName]);
-                    if ( $diffTimestamp > 0 or $timeFromLastUpdate > 86400 ) {
-                        $nowTimestamp = uploadToGBQ($tableName);
-                        $activeStatus[$tableName] = $nowTimestamp;
-                    }
-                } else {
-                    $timeFromLastUpdate = diffTimeStampFromNow($activeStatus[$tableName]);
-                    #echo "$tableName $timeFromLastUpdate\n";
-                    if ( $timeFromLastUpdate > 86400 ) {
-                        $nowTimestamp = uploadToGBQ($tableName);
-                        $activeStatus[$tableName] = $nowTimestamp;
-                    }
+        foreach ($uploadTables as $tableName) {
+            $query = "checksum table " . $_ENV['DB_DATABASE_NAME'] . "." . $tableName;
+            $result = mysqli_query($_resource, $query);
+            $row = mysqli_fetch_row($result);
+            if (!is_null($row[1])) {
+                $checksum = $row[1];
+            }
+            if (isset($activeStatus[$tableName])) {
+                if ($activeStatus[$tableName] != $checksum) {
+                    uploadToGBQ($tableName);
+                    $activeStatus[$tableName] = $checksum;
                 }
             } else {
-                $nowTimestamp = uploadToGBQ($tableName);
-                $activeStatus[$tableName] = $nowTimestamp;
+                uploadToGBQ($tableName);
+                $activeStatus[$tableName] = $checksum;
             }
         }
     } else {
-        foreach($uploadTables as $tableName) {
-            $nowTimestamp = uploadToGBQ($tableName);
-            $activeStatus[$tableName] = $nowTimestamp;
+        foreach ($uploadTables as $tableName) {
+            $query = "checksum table " . $_ENV['DB_DATABASE_NAME'] . "." . $tableName;
+            $result = mysqli_query($_resource, $query);
+            $row = mysqli_fetch_row($result);
+            if (!is_null($row[1])) {
+                $checksum = $row[1];
+            }
+            uploadToGBQ($tableName);
+            $activeStatus[$tableName] = $checksum;
         }
     }
 
