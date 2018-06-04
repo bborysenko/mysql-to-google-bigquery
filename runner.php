@@ -8,6 +8,12 @@ foreach (['../../../autoload.php', '../../autoload.php', '../vendor/autoload.php
     }
 }
 
+function diffTimeStampFromNow($timestampToDiff) {
+    $nowDateTime = new DateTime();
+    $nowTimestamp = $nowDateTime -> getTimestamp();
+    return $nowTimestamp - $timestampToDiff;
+}
+
 function uploadToGBQ($tableName) {
     $command="env -i vendor/bin/console sync --delete-table ". $tableName ." 2>&1";
     echo($command . PHP_EOL);
@@ -67,7 +73,7 @@ while(true) {
         $activeStatus = json_decode(file_get_contents($jsonFilePath), true);
         unlink($jsonFilePath);
         foreach($uploadTables as $tableName) {
-            if(isset($activeStatus[$tableName])){
+            if(isset($activeStatus[$tableName])) {
                 $query = "select UPDATE_TIME from tables where TABLE_NAME='". $tableName ."' and table_schema='". $_ENV['DB_DATABASE_NAME'] ."'";
                 $result = mysqli_query($_resource, $query);
                 $row = mysqli_fetch_row($result);
@@ -75,7 +81,15 @@ while(true) {
                     $lastMysqlUpdate = new DateTime($row[0]);
                     $lastMysqlUpdateTimestamp = $lastMysqlUpdate -> getTimestamp();
                     $diffTimestamp = $lastMysqlUpdateTimestamp - $activeStatus[$tableName];
-                    if ( $diffTimestamp > 0 ) {
+                    $timeFromLastUpdate = diffTimeStampFromNow($activeStatus[$tableName]);
+                    if ( $diffTimestamp > 0 or $timeFromLastUpdate > 86400 ) {
+                        $nowTimestamp = uploadToGBQ($tableName);
+                        $activeStatus[$tableName] = $nowTimestamp;
+                    }
+                } else {
+                    $timeFromLastUpdate = diffTimeStampFromNow($activeStatus[$tableName]);
+                    #echo "$tableName $timeFromLastUpdate\n";
+                    if ( $timeFromLastUpdate > 86400 ) {
                         $nowTimestamp = uploadToGBQ($tableName);
                         $activeStatus[$tableName] = $nowTimestamp;
                     }
