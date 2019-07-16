@@ -259,6 +259,25 @@ class BigQuery
         return $job;
     }
 
+    public function moveTmpToOriginTable($tableName, $OriginTableName)
+    {
+        $client = $this->getClient();
+        $dataset = $client->dataset($_ENV['BQ_DATASET']);
+        $sourceTable = $dataset->table($tableName);
+        $destinationTable = $dataset->table($OriginTableName);
+
+        $job = $sourceTable->copy(
+            $destinationTable,
+            [
+                'jobConfig' => [
+                    'writeDisposition' => 'WRITE_TRUNCATE'
+                ]
+            ]
+        );
+
+        return $job;
+    }
+
     /**
      * Check if a BigQuery table exists
      * @param  string $tableName Table name
@@ -272,3 +291,4 @@ class BigQuery
         return $dataset->table($tableName)->exists();
     }
 }
+

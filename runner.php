@@ -15,7 +15,7 @@ function diffTimeStampFromNow($timestampToDiff) {
 }
 
 function uploadToGBQ($tableName) {
-    $command="env -i vendor/bin/console sync --delete-table ". $tableName ." 2>&1";
+    $command="env -i vendor/bin/console sync --create-table --delete-table ". $tableName ." 2>&1";
     echo($command . PHP_EOL);
     $output = shell_exec($command);
     echo($output . PHP_EOL);

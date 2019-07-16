@@ -46,13 +46,14 @@ class SyncService
     public function execute(
         string $databaseName,
         string $tableName,
-        string $bigQueryTableName,
+        string $bigQueryTableNameOrigin,
         bool $createTable,
         bool $deleteTable,
         $orderColumn,
         array $ignoreColumns,
         OutputInterface $output
     ) {
+        $bigQueryTableName = $bigQueryTableNameOrigin . '_upl_tmp';
         if ($deleteTable) {
             // Delete the BigQuery Table before any operation
             if ($this->bigQuery->tableExists($bigQueryTableName)) {
@@ -113,12 +114,12 @@ class SyncService
         $rowsDiff = $mysqlCountTableRows - $bigQueryCountTableRows;
 
         // We don't need to sync
-        if ($rowsDiff <= 0) {
+        /*if ($rowsDiff <= 0) {
             $output->writeln('<fg=green>Already synced!</>');
             return;
         } else {
             $output->writeln('<fg=green>Syncing ' . $rowsDiff . ' rows</>');
-        }
+        }*/
 
         $maxRowsPerBatch = (isset($_ENV['MAX_ROWS_PER_BATCH'])) ? $_ENV['MAX_ROWS_PER_BATCH'] : 20000;
         $batches = ceil($rowsDiff / $maxRowsPerBatch);
@@ -141,8 +142,17 @@ class SyncService
             $progress->advance();
         }
 
-        $output->writeln('<fg=green>Synced!</>');
         $progress->finish();
+        echo PHP_EOL;
+        $output->writeln('<fg=green>Synced!</>');
+
+        echo "Copying to origin table.";
+        $job = $this->bigQuery->moveTmpToOriginTable($bigQueryTableName, $bigQueryTableNameOrigin);
+
+        $this->waitJob($job);
+
+        $this->bigQuery->deleteTable($bigQueryTableName);
+
     }
 
     /**
@@ -274,6 +284,8 @@ class SyncService
             // Wait a second to retry
             sleep(1);
         }
+
+        echo "\n";
 
         if (array_key_exists('errors', $jobInfo['status'])
             && is_array($jobInfo['status']['errors'])
