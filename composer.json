@@ -26,5 +26,5 @@
     "config": {
         "bin-dir": "bin"
     },
-    "bin": ["bin/console"]
+    "bin": ["bin/console", "bin/runner"]
 }
