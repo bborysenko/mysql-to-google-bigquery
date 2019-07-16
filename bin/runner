@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 
 foreach (['../../../autoload.php', '../../autoload.php', '../vendor/autoload.php', 'vendor/autoload.php'] as $autoload) {
