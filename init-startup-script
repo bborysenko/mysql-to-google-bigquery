@@ -1,0 +1,50 @@
+#!/bin/sh
+#
+# chkconfig:   2345 50 50
+# description: The daemon for uploading data from mysql to GBQ
+
+# source function library
+. /etc/rc.d/init.d/functions
+
+PROG='vendor/bin/runner'
+WORKDIR='/opt/bq-uploader'
+LOGFILE='/var/log/bq-uploader.log'
+PIDFILE='/var/run/bq-uploader.pid'
+BASE='runner'
+USER='root'
+
+START="${PROG} 2>&1 >> ${LOGFILE} &"
+
+  case "$1" in
+  start)
+  echo -n $"Starting $BASE: "
+  cd ${WORKDIR}
+  daemon --user $USER --check $BASE $START
+  RETVAL=$?
+  [ $RETVAL -eq 0 ] && touch /var/lock/subsys/$BASE
+  PID=`ps ax | grep 'vendor/bin/runner' | grep -v grep | awk {'print $1'}`
+  echo ${PID} > ${PIDFILE}
+  echo
+  ;;
+  stop)
+  echo -n $"Shutting down $BASE: "
+  killproc -p ${PIDFILE}
+  RETVAL=$?
+  [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/$BASE
+  echo
+  ;;
+  restart)
+  $0 stop
+  sleep 1
+  $0 start
+  ;;
+  status)
+  status -p ${PIDFILE}
+  ;;
+  *)
+  echo "Usage: $0 {start|stop|restart|status}" >&2
+  exit 1
+  ;;
+  esac
+
+  exit 0
