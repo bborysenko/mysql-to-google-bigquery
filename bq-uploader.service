@@ -1,0 +1,10 @@
+[Unit]
+Description=bq-uploader
+After=network.target
+After=mysql.service
+[Service]
+WorkingDirectory=/opt/bq-uploader
+User=root
+ExecStart=/usr/bin/php vendor/bin/runner
+[Install]
+WantedBy=multi-user.target
