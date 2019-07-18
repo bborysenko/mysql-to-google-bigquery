@@ -146,6 +146,11 @@ class SyncService
         echo PHP_EOL;
         $output->writeln('<fg=green>Synced!</>');
 
+        // Wait if loading is in progress
+        if (! $this->currentJob) {
+            $this->waitJob($job);
+        }
+
         echo "Copying to origin table.";
         $job = $this->bigQuery->moveTmpToOriginTable($bigQueryTableName, $bigQueryTableNameOrigin);
 
